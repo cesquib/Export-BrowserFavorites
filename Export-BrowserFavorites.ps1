@@ -44,9 +44,9 @@ Param (
   [Parameter(mandatory=$true)]
   [string] $htmloutput,
   [Parameter(mandatory=$true)]
-  [boolean] $saveCSV,
+  [bool] $saveCSV,
   [Parameter(mandatory=$true)]
-  [string] $uniqueonly
+  [bool] $uniqueonly
 
 )
 <#
