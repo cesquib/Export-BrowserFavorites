@@ -6,11 +6,16 @@
   Provides a method to backup IE, Firefox, and/or Chrome bookmarks into Netscape Bookmark File Format (html).
   Use in cases where you need to re-create a user's local machine profile and they don't have bookmark sync'ign enabled or maybe use multiple browsers that do not provide a sync option.
   This script assumes you're backing up favorites/bookmarks for the user that initiated the script.  All variables containing path information for different browser bookmark files use the environment variable $ENV:USERPROFILE and should be changed if you want to backup another user's bookmarks.
-.PARAMETER browser
+.PARAMETER browser [string]
     Which supported browser(s) do you want to work with;
     Acceptable inputs - IE|FF|Chrome|All or a combination of multiple browser types.  If this paramter has "all" combined with another browser it will error out and fail. (e.g. '.\backup-favorites.ps1 -browser all,ie' will fail)
-.PARAMETER htmlOutput
+.PARAMETER htmlOutput [string]
     Location where you want to store the Netscape Bookmark formatted file.
+.PARAMTER saveCSV [boolean]
+    If $TRUE this will keep the temporary CSV file created?
+.PARAMTER uniqueonly [boolean]
+    IF $TRUE will attempt a cleanup of bookmarks to not output duplicates.  Duplicate values are based on URL only.
+.PARAMETER 
 .INPUTS
   <Inputs if any, otherwise state None>
 .OUTPUTS
