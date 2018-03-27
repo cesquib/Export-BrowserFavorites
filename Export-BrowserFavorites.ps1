@@ -15,7 +15,8 @@
     If $TRUE this will keep the temporary CSV file created?
 .PARAMTER uniqueonly [boolean]
     IF $TRUE will attempt a cleanup of bookmarks to not output duplicates.  Duplicate values are based on URL only.
-.PARAMETER 
+.PARAMETER currentuser [boolean]
+    By default currentuser param is true and will backup bookmarks based under the user context that initiated this script.  If set to false you can specificy the user's profile directory (e.g. C:\users\username\) by setting the 'profilepath' paramater.
 .INPUTS
   <Inputs if any, otherwise state None>
 .OUTPUTS
@@ -35,11 +36,58 @@
 #>
 
 #---------------------------------------------------------[Script Parameters]------------------------------------------------------
-
 Param (
   #Script parameters go here
-)
+  [ValidateSet("IE","FF","Chrome","All")]
+  [Parameter(mandatory=$true)]
+  [array] $browser,
+  [Parameter(mandatory=$true)]
+  [string] $htmloutput,
+  [Parameter(mandatory=$true)]
+  [boolean] $saveCSV,
+  [Parameter(mandatory=$true)]
+  [string] $uniqueonly
 
+)
+<#
+DynamicParam {
+    if (-not (!$currentuser)) {
+        $profileAttribute = New-Object System.Management.Automation.ParameterAttribute
+        $profileAttribute.Mandatory = $true
+        $attributionCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
+        $attributeCollection.Add($profileAttribute)
+        $profileParam = New-Object System.Management.Automation.RuntimeDefinedParameter('profilepath', [string], $attributeCollection)
+        $paramDictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+        $paramDictionary.Add('profilepath', $profileParam)
+        return $paramDictionary
+    }
+}
+#>
+<#
+DynamicParam {
+        if ($product -eq "Hard Lemonade") {
+            #create a new ParameterAttribute Object
+            $ageAttribute = New-Object System.Management.Automation.ParameterAttribute
+            $ageAttribute.Position = 3
+            $ageAttribute.Mandatory = $true
+            $ageAttribute.HelpMessage = "This product is only available for customers 21 years of age and older. Please enter your age:"
+ 
+            #create an attributecollection object for the attribute we just created.
+            $attributeCollection = new-object System.Collections.ObjectModel.Collection[System.Attribute]
+ 
+            #add our custom attribute
+            $attributeCollection.Add($ageAttribute)
+ 
+            #add our paramater specifying the attribute collection
+            $ageParam = New-Object System.Management.Automation.RuntimeDefinedParameter('age', [Int16], $attributeCollection)
+ 
+            #expose the name of our parameter
+            $paramDictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
+            $paramDictionary.Add('age', $ageParam)
+            return $paramDictionary
+        }
+}
+#>
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
 
