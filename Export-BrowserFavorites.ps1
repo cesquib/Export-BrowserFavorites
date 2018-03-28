@@ -43,11 +43,10 @@ Param (
   [array] $browser,
   [Parameter(mandatory=$true)]
   [string] $htmloutput,
+  [bool] $saveCSV=$false,
   [Parameter(mandatory=$true)]
-  [bool] $saveCSV,
-  [Parameter(mandatory=$true)]
-  [bool] $uniqueonly
-
+  [bool] $uniqueonly,
+  [bool] $currentuser=$true
 )
 <#
 DynamicParam {
