@@ -1,4 +1,5 @@
-﻿#requires -version 4
+﻿#requires -version 5
+
 <#
 .SYNOPSIS
   Exports IE, Firefox, and/or Chrome bookmarks/favorites to a Netscape Bookmark File Format for easy importing into most modern browsers.
@@ -11,16 +12,18 @@
     Acceptable inputs - IE|FF|Chrome|All or a combination of multiple browser types.  If this paramter has "all" combined with another browser it will error out and fail. (e.g. '.\backup-favorites.ps1 -browser all,ie' will fail)
 .PARAMETER htmlOutput [string]
     Location where you want to store the Netscape Bookmark formatted file.
-.PARAMTER saveCSV [boolean]
+.PARAMTER saveCSV [bool]
     If $TRUE this will keep the temporary CSV file created?
-.PARAMTER uniqueonly [boolean]
+.PARAMTER uniqueonly [bool]
     IF $TRUE will attempt a cleanup of bookmarks to not output duplicates.  Duplicate values are based on URL only.
-.PARAMETER currentuser [boolean]
-    By default currentuser param is true and will backup bookmarks based under the user context that initiated this script.  If set to false you can specificy the user's profile directory (e.g. C:\users\username\) by setting the 'profilepath' paramater.
-.INPUTS
-  <Inputs if any, otherwise state None>
-.OUTPUTS
-  <Outputs if any, otherwise state None>
+.PARAMETER currentuser [bool]
+    Default: $true
+    Will backup bookmarks based under the user context that initiated this script.  If set to false you can specificy the user's profile directory (e.g. C:\users\username\) by setting the 'profilepath' paramater.
+.PARAMETER getprereqs [bool]
+    Default: $false
+    This script will check for 3rd party tools like the SQLite dll.  If not found will automatically download the necessary fies.
+    We will always attempt to place needed files inside the user's %temp%\PSLib folder.
+
 .NOTES
   Version:        1.0
   Author:         Mike Esquibel
@@ -31,7 +34,7 @@
 
   Firefox stores bookmarks in an SQLite DB.  This script was testing using the Precompiled Binaries for 64-bit Windows (.Net Framework 4.5) - filename: sqlite-netFx45-binary-bundle-x64-2012-1.0.108.0.zip
 
-.EXAMPLE
+  .EXAMPLE
 
 #>
 
@@ -48,45 +51,7 @@ Param (
   [bool] $uniqueonly,
   [bool] $currentuser=$true
 )
-<#
-DynamicParam {
-    if (-not (!$currentuser)) {
-        $profileAttribute = New-Object System.Management.Automation.ParameterAttribute
-        $profileAttribute.Mandatory = $true
-        $attributionCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-        $attributeCollection.Add($profileAttribute)
-        $profileParam = New-Object System.Management.Automation.RuntimeDefinedParameter('profilepath', [string], $attributeCollection)
-        $paramDictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
-        $paramDictionary.Add('profilepath', $profileParam)
-        return $paramDictionary
-    }
-}
-#>
-<#
-DynamicParam {
-        if ($product -eq "Hard Lemonade") {
-            #create a new ParameterAttribute Object
-            $ageAttribute = New-Object System.Management.Automation.ParameterAttribute
-            $ageAttribute.Position = 3
-            $ageAttribute.Mandatory = $true
-            $ageAttribute.HelpMessage = "This product is only available for customers 21 years of age and older. Please enter your age:"
- 
-            #create an attributecollection object for the attribute we just created.
-            $attributeCollection = new-object System.Collections.ObjectModel.Collection[System.Attribute]
- 
-            #add our custom attribute
-            $attributeCollection.Add($ageAttribute)
- 
-            #add our paramater specifying the attribute collection
-            $ageParam = New-Object System.Management.Automation.RuntimeDefinedParameter('age', [Int16], $attributeCollection)
- 
-            #expose the name of our parameter
-            $paramDictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
-            $paramDictionary.Add('age', $ageParam)
-            return $paramDictionary
-        }
-}
-#>
+
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
 
@@ -128,7 +93,9 @@ function Get-IEFavorites{
         $Properties = @{
         ShortcutName = $Shortcut.Name;
         ShortcutFull = $Shortcut.FullName;
-        ShortcutPath = $shortcut.DirectoryName
+        ShortcutPath = $shortcut.DirectoryName;
+        ShortcutModified = $shortcut.Modified;
+        ShortcutCreated = $shortcut.Created;
         Target = $Shell.CreateShortcut($Shortcut).targetpath
         }
         New-Object PSObject -Property $Properties
@@ -145,5 +112,18 @@ ForEach ($ieItem in $ieItems) {
 }
 
 #-----------------------------------------------------------[Execution]------------------------------------------------------------
+#Let's start with IE.
+if ($browser -contains 'all' -or 'ie') {
+  $ieFavorites = Get-ChildItem - -Recurse $ENV:USERPROFILE\favorites -Include *.URL
+  $wShell = New-Object -ComObject WScript.Shell
+  foreach ($favorite in $ieFavorites) {
+    $ieProps = @{
+      ShortcutName = $Shortcut.Name;
+      ShortcutFull = $Shortcut.FullName;
+      ShortcutPath = $Shortcut.DirectoryName;
+      ShortcutModified = $Shortcut.Modified;
+      ShortcutCreated = $Shortcut.CreationTime;
+    }
+  }
 
-#Script Execution goes here
+}

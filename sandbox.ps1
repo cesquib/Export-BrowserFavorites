@@ -1,1 +1,1 @@
-﻿
+﻿Install-Module ShowUI
