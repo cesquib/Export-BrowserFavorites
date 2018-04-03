@@ -1,11 +1,20 @@
+#credits: Mostly to tobibeer and Snak3d0c @ https://stackoverflow.com/questions/47345612/export-chrome-bookmarks-to-csv-file-using-powershell
 #Path to chrome bookmarks
 $pathToJsonFile = "$env:localappdata\Google\Chrome\User Data\Default\Bookmarks"
 
-#Helper vars
-$temp = "C:\temp\google-bookmarks.json"
-$timestamp = Get-Date -Format yyyymmmdd_hhmmss
+$htmlOut = 'C:\temp\ChromeBookmarks.html'
+$htmlHeader = @'
+<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!--This is an automatically generated file.
+    It will be read and overwritten.
+    Do Not Edit! -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<Title>Bookmarks</Title>
+<H1>Bookmarks</H1>
+<DL><p>
+'@
 
-$global:bookmarks = @()
+$htmlHeader | Out-File -FilePath $htmlOut -Force -Encoding utf8 #line59
 
 #A nested function to enumerate bookmark folders
 Function Get-BookmarkFolder {
@@ -20,54 +29,26 @@ Process
 
  foreach ($child in $node.children) 
  {
-   #get parent folder name
-   $parent = $node.Name
-   $folder = If (!$node.Folder) {""} Else {$node.Folder}
-   $folder = $folder + $parent + "/" 
-   $child | Add-Member @{Folder= $folder}
+   $da = [math]::Round([double]$child.date_added / 1000000) #date_added - from microseconds (Google Chrome {dates}) to seconds 'standard' epoch.
+   $dm = [math]::Round([double]$child.date_modified / 1000000) #date_modified - from microseconds (Google Chrome {dates}) to seconds 'standard' epoch.
    if ($child.type -eq 'Folder') 
    {
-     # Write-Verbose "Processing $($child.Name)"
+     "    <DT><H3 FOLDED ADD_DATE=`"$($da)`">$($child.name)</H3>" | Out-File -FilePath $htmlOut -Append -Force -Encoding utf8
+     "       <DL><p>" | Out-File -FilePath $htmlOut -Append -Force -Encoding utf8
      Get-BookmarkFolder $child
+     "       </DL><p>" | Out-File -FilePath $htmlOut -Append -Force -Encoding utf8
    }
    else 
    {
-        $hash= [ordered]@{
-          Folder = $parent
-          Name = $child.name
-          URL = $child.url
-          Path = $child.folder.substring(0,$child.folder.Length-1)
-          Added = "{0:yyyyMMddHHmmssfff}" -f [datetime]::FromFileTime(([double]$child.Date_Added)*10)
-        }
-        #add ascustom object to collection
-        $global:bookmarks += New-Object -TypeName PSobject -Property $hash
+        "       <DT><a href=`"$($child.url)`" ADD_DATE=`"$($da)`">$($child.name)</a>" | Out-File -FilePath $htmlOut -Append -Encoding utf8
   } #else url
  } #foreach
  } #process
 } #end function
 
 $data = Get-content $pathToJsonFile -Encoding UTF8 | out-string | ConvertFrom-Json
-
-#process top level "folders"
-$data.roots.bookmark_bar | Get-BookmarkFolder
-$data.roots.other | Get-BookmarkFolder
-$data.roots.synced | Get-BookmarkFolder
-
-#create a new JSON file
-$empty | Set-Content $temp -Force
-'{
-"bookmarks":' | Add-Content $temp
-
-#these should be the top level "folders"
-$global:bookmarks | ConvertTo-Json | Add-Content $temp
-
-'}' | Add-Content $temp
-
-Write-Verbose $temp
-
-Get-Content $temp -Raw |
-ConvertFrom-Json |
-select -ExpandProperty bookmarks |
-Export-CSV $env:USERPROFILE\Desktop\ChromeBookmarks_$timestamp.csv -NoTypeInformation
-
-Remove-Item $temp
+$sections = $data.roots.PSObject.Properties | select -ExpandProperty name
+ForEach ($entry in $sections) {
+    $data.roots.$entry | Get-BookmarkFolder
+}
+'</DL>' | Out-File -FilePath $htmlOut -Append -Force -Encoding utf8
