@@ -7,18 +7,15 @@
   Provides a method to backup IE, Firefox, and/or Chrome bookmarks into Netscape Bookmark File Format (html).
   Use in cases where you need to re-create a user's local machine profile and they don't have bookmark sync'ign enabled or maybe use multiple browsers that do not provide a sync option.
   This script assumes you're backing up favorites/bookmarks for the user that initiated the script.  All variables containing path information for different browser bookmark files use the environment variable $ENV:USERPROFILE and should be changed if you want to backup another user's bookmarks.
-.PARAMETER browser [string]
+.PARAMETER browser [string]<required>
     Which supported browser(s) do you want to work with;
-    Acceptable inputs - IE|FF|Chrome|All or a combination of multiple browser types.  If this paramter has "all" combined with another browser it will error out and fail. (e.g. '.\backup-favorites.ps1 -browser all,ie' will fail)
-.PARAMETER htmlOutput [string]
+    Acceptable inputs - IE|FF|Chrome|All or a combination of multiple browser types.  If this paramter has "all" combined with another browser it will assume 'all' (e.g. '.\backup-favorites.ps1 -browser all,ie' will backup ALL supported browsers)
+.PARAMETER htmlOutput [string]<required>
     Location where you want to store the Netscape Bookmark formatted file.
-.PARAMTER saveCSV [bool]
+.PARAMETER saveCSV [bool]
     If $TRUE this will keep the temporary CSV file created?
-.PARAMTER uniqueonly [bool]
+.PARAMETER uniqueonly [bool]
     IF $TRUE will attempt a cleanup of bookmarks to not output duplicates.  Duplicate values are based on URL only.
-.PARAMETER currentuser [bool]
-    Default: $true
-    Will backup bookmarks based under the user context that initiated this script.  If set to false you can specificy the user's profile directory (e.g. C:\users\username\) by setting the 'profilepath' paramater.
 .PARAMETER getprereqs [bool]
     Default: $false
     Will check for 3rd party tools like the SQLite dll.  If not found will automatically download the necessary files.
@@ -26,7 +23,11 @@
 .PARAMETER dedupe [bool]
     Default: $false
     Will create a CSV file of all selected browser favorites and remove any duplicates found when exporting to the bookmarks.html file.  This will have an impact on your folder structure if for example IE has Favorites\Tech\<someurl> and FF has Favorites\Technology\<someurl> one of those will be deleted.
-    
+.PARAMETER userprofile [string]
+    default: <null>
+    If left empty (default) the script assumes you are running a backup of bookmarks for the user that is running this script.
+    Otherwise, please enter the user's full profile path but only the ROOT (e.g. 'C:\users\somename')
+
 
 .NOTES
   Version:        1.0
@@ -63,29 +64,7 @@ $tmpCSV = "$ENV:TEMP\bookmark_export--$((Get-Date).ToString("yyyyMMdd")).csv"
 #----------------------------------------------------------[Declarations]----------------------------------------------------------
 
 #-----------------------------------------------------------[Functions]------------------------------------------------------------
-<#
-Function <FunctionName> {
-  Param ()
-  Begin {
-    Write-Host '<description of what is going on>...'
-  }
-  Process {
-    Try {
-      <code goes here>
-    }
-    Catch {
-      Write-Host -BackgroundColor Red "Error: $($_.Exception)"
-      Break
-    }
-  }
-  End {
-    If ($?) {
-      Write-Host 'Completed Successfully.'
-      Write-Host ' '
-    }
-  }
-}
-#>
+
 function Export-IEFavorites{
     Param()
     Try {
