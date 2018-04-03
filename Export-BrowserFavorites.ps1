@@ -59,6 +59,17 @@ Param (
 
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
 $tmpCSV = "$ENV:TEMP\bookmark_export--$((Get-Date).ToString("yyyyMMdd")).csv"
+$htmlHeader = @'
+<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!--This is an automatically generated file.
+    It will be read and overwritten.
+    Do Not Edit! -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<Title>Bookmarks</Title>
+<H1>Bookmarks</H1>
+<DL><p>
+'@
+
 
 
 #----------------------------------------------------------[Declarations]----------------------------------------------------------
@@ -85,11 +96,14 @@ function Export-IEFavorites{
 
     } #=>try
     Catch {
-      Write-Error -Message "There was an error get"
+      Write-Error -Message "There was an error getting bookmarks from the users profile."
+      Write-Verbose -Message "There was an error getting bookmarks from the users profile.`nSystem error message: $($_.Exception.ToString())"
     } #=>catch
-[Runtime.InteropServices.Marshal]::ReleaseComObject($Shell) | Out-Null
-<#
+    Finally {
+      [Runtime.InteropServices.Marshal]::ReleaseComObject($Shell) | Out-Null
+    } #=>finally
 
+<#
 $ieItems = Get-IEFavorites
 ForEach ($ieItem in $ieItems) {
     Write-Host $ieItem.ShortcutFull
@@ -98,20 +112,19 @@ ForEach ($ieItem in $ieItems) {
 }
 
 #-----------------------------------------------------------[Execution]------------------------------------------------------------
-#Let's start with IE.
-if ($browser -contains 'all' -or 'ie') {
-  $Shortcuts = Get-ChildItem -Recurse $ENV:USERPROFILE\favorites -Include *.url
-  $Shell = New-Object -ComObject WScript.Shell
-  foreach ($Shortcut in $Shortcuts)
-  {
-    $Properties = @{
-      ShortcutName = $Shortcut.Name;
-      ShortcutFull = $Shortcut.FullName;
-      ShortcutPath = $shortcut.DirectoryName;
-      ShortcutModified = $shortcut.Modified;
-      ShortcutCreated = $shortcut.Created;
-      Target = $Shell.CreateShortcut($Shortcut).targetpath
-    } #=> properties
-  New-Object PSObject -Property $Properties
-  }#=> foreach
+#The bookmark file is always necessary so we'll create that first and insert the main header.
+Try {
+  $htmlHeader | Out-File -FilePath $htmlOut -Force -Encoding utf8
+} Catch {
+  Write-Error -Message "Unable to create bookmarks HTML file located in $htmlout .  Please check the path and make sure you have the proper permissions to write to that location."
+  Write-Verbose -Message "Failed to write to 'C:\windows\system32\test.html'. Please check permissions. `n`nSystem error message: $($_.Exception.ToString())"
+  Exit
 }
+
+
+if ($browser -contains 'all' -or 'ie') {
+  $ieItems = Export-IEFavorites
+  ForEach ($ieItem in $ieItems) {
+    
+  }#=> ForEach ieItem
+}#=> if IE/all

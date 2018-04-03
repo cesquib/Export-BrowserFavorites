@@ -1,4 +1,8 @@
-﻿$tmpCSV = "$ENV:TEMP\bookmark_export-$((Get-Date).ToString("yyyyMMdd")).csv"
-#Write-Output (get-date).ToString("yyyyMMdd")
-WRite-Output $tmpCSV
-Write-Output $ENV:TEMP
+﻿Try {
+    "This is a test" | Out-File -FilePath 'C:\windows\system32\test.html' -Force -Encoding utf8
+} Catch {
+    Write-Error -Message "Failed to write to 'C:\windows\system32\test.html'. Please check permissions."
+    Exit
+}
+
+
