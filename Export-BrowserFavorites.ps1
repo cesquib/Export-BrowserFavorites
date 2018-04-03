@@ -21,8 +21,12 @@
     Will backup bookmarks based under the user context that initiated this script.  If set to false you can specificy the user's profile directory (e.g. C:\users\username\) by setting the 'profilepath' paramater.
 .PARAMETER getprereqs [bool]
     Default: $false
-    This script will check for 3rd party tools like the SQLite dll.  If not found will automatically download the necessary fies.
+    Will check for 3rd party tools like the SQLite dll.  If not found will automatically download the necessary files.
     We will always attempt to place needed files inside the user's %temp%\PSLib folder.
+.PARAMETER dedupe [bool]
+    Default: $false
+    Will create a CSV file of all selected browser favorites and remove any duplicates found when exporting to the bookmarks.html file.  This will have an impact on your folder structure if for example IE has Favorites\Tech\<someurl> and FF has Favorites\Technology\<someurl> one of those will be deleted.
+    
 
 .NOTES
   Version:        1.0
@@ -52,16 +56,13 @@ Param (
   [bool] $currentuser=$true
 )
 
-
 #---------------------------------------------------------[Initialisations]--------------------------------------------------------
+$tmpCSV = "$ENV:TEMP\bookmark_export--$((Get-Date).ToString("yyyyMMdd")).csv"
 
 
 #----------------------------------------------------------[Declarations]----------------------------------------------------------
 
-
-
 #-----------------------------------------------------------[Functions]------------------------------------------------------------
-
 <#
 Function <FunctionName> {
   Param ()
@@ -85,22 +86,28 @@ Function <FunctionName> {
   }
 }
 #>
-function Get-IEFavorites{
-    $Shortcuts = Get-ChildItem -Recurse $ENV:USERPROFILE\favorites -Include *.url
-    $Shell = New-Object -ComObject WScript.Shell
-    foreach ($Shortcut in $Shortcuts)
-    {
+function Export-IEFavorites{
+    Param()
+    Try {
+      $Shortcuts = Get-ChildItem -Recurse $ENV:USERPROFILE\favorites -Include *.url
+      $Shell = New-Object -ComObject WScript.Shell
+      foreach ($Shortcut in $Shortcuts)
+      {
         $Properties = @{
-        ShortcutName = $Shortcut.Name;
-        ShortcutFull = $Shortcut.FullName;
-        ShortcutPath = $shortcut.DirectoryName;
-        ShortcutModified = $shortcut.Modified;
-        ShortcutCreated = $shortcut.Created;
-        Target = $Shell.CreateShortcut($Shortcut).targetpath
-        }
-        New-Object PSObject -Property $Properties
-    }
+          ShortcutName = $Shortcut.Name;
+          ShortcutFull = $Shortcut.FullName;
+          ShortcutPath = $shortcut.DirectoryName;
+          ShortcutModified = $shortcut.Modified;
+          ShortcutCreated = $shortcut.Created;
+          Target = $Shell.CreateShortcut($Shortcut).targetpath
+        } #=> properties
+      New-Object PSObject -Property $Properties
+      }#=> shortcut
 
+    } #=>try
+    Catch {
+      Write-Error -Message "There was an error get"
+    } #=>catch
 [Runtime.InteropServices.Marshal]::ReleaseComObject($Shell) | Out-Null
 <#
 
@@ -114,16 +121,18 @@ ForEach ($ieItem in $ieItems) {
 #-----------------------------------------------------------[Execution]------------------------------------------------------------
 #Let's start with IE.
 if ($browser -contains 'all' -or 'ie') {
-  $ieFavorites = Get-ChildItem - -Recurse $ENV:USERPROFILE\favorites -Include *.URL
-  $wShell = New-Object -ComObject WScript.Shell
-  foreach ($favorite in $ieFavorites) {
-    $ieProps = @{
+  $Shortcuts = Get-ChildItem -Recurse $ENV:USERPROFILE\favorites -Include *.url
+  $Shell = New-Object -ComObject WScript.Shell
+  foreach ($Shortcut in $Shortcuts)
+  {
+    $Properties = @{
       ShortcutName = $Shortcut.Name;
       ShortcutFull = $Shortcut.FullName;
-      ShortcutPath = $Shortcut.DirectoryName;
-      ShortcutModified = $Shortcut.Modified;
-      ShortcutCreated = $Shortcut.CreationTime;
-    }
-  }
-
+      ShortcutPath = $shortcut.DirectoryName;
+      ShortcutModified = $shortcut.Modified;
+      ShortcutCreated = $shortcut.Created;
+      Target = $Shell.CreateShortcut($Shortcut).targetpath
+    } #=> properties
+  New-Object PSObject -Property $Properties
+  }#=> foreach
 }
