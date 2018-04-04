@@ -91,12 +91,13 @@ Function Get-IEFavorite {
                             Name = $object.Name
                             IsFolder = [bool]$object.PSIsContainer
                             IsLink = [bool]$False 
-                            Url = $Null
+                            #Url = $Null
                             Path = $Object.FullName
                             Modified = $object.LastWriteTime
                             Created = $object.CreationTime
                         }  
                         $Object.pstypenames.insert(0,'System.IO.InternetShortcutFolder')
+                        
                     } Else {
                         $Object = [pscustomobject]@{
                             Name = $object.Name
@@ -115,9 +116,4 @@ Function Get-IEFavorite {
         }
     }
     End {}
-}
-
-$favorites = Get-IEFavorite -Directory
-ForEach ($favorite in $favorites) {
-    Write-Output $favorite
 }
